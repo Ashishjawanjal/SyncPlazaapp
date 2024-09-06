@@ -8,7 +8,7 @@
     "start":"index"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ashish",
   "license": "ISC",
   "dependencies": {
     "@shopify/shopify-api": "^11.3.0",

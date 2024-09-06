@@ -77,72 +77,24 @@ app.all('/orders/:id?', async (req, res) => {
   }
 });
 
-// Products Route
-app.all('/products/:id?', async (req, res) => {
-  const { id } = req.params;
-  const url = id ? `${baseUrl}/products/${id}.json` : `${baseUrl}/products.json`;
 
-  try {
-    let response;
-    switch (req.method) {
-      case 'GET':
-        response = await axios.get(url);
-        break;
-      case 'POST':
-        response = await axios.post(url, { product: req.body });
-        break;
-      case 'PUT':
-        if (!id) return res.status(400).send('Product ID is required for updates');
-        response = await axios.put(url, { product: req.body });
-        break;
-      case 'DELETE':
-        if (!id) return res.status(400).send('Product ID is required for deletion');
-        response = await axios.delete(url);
-        break;
-      default:
-        return res.status(405).send('Method not allowed');
+// Products Route (GET only)
+app.get('/products/:id?', async (req, res) => {
+    const { id } = req.params;
+    const url = id ? `${baseUrl}/products/${id}.json` : `${baseUrl}/products.json`;
+  
+    try {
+      const response = await axios.get(url);
+      res.status(response.status).send(response.data);
+    } catch (error) {
+      console.error('Error:', error.message);
+      res.status(error.response ? error.response.status : 500).send(error.message);
     }
-    res.status(response.status).send(response.data);
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(error.response ? error.response.status : 500).send(error.message);
-  }
-});
-
-// Collections Route
-app.all('/collections/:id?', async (req, res) => {
-  const { id } = req.params;
-  const url = id ? `${baseUrl}/collections/${id}.json` : `${baseUrl}/collections.json`;
-
-  try {
-    let response;
-    switch (req.method) {
-      case 'GET':
-        response = await axios.get(url);
-        break;
-      case 'POST':
-        response = await axios.post(url, { collection: req.body });
-        break;
-      case 'PUT':
-        if (!id) return res.status(400).send('Collection ID is required for updates');
-        response = await axios.put(url, { collection: req.body });
-        break;
-      case 'DELETE':
-        if (!id) return res.status(400).send('Collection ID is required for deletion');
-        response = await axios.delete(url);
-        break;
-      default:
-        return res.status(405).send('Method not allowed');
-    }
-    res.status(response.status).send(response.data);
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(error.response ? error.response.status : 500).send(error.message);
-  }
-});
-
+  });
+  
 // Start the server
 const PORT = process.env.PORT || 3006;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+

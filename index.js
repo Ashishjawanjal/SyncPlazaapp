@@ -14,26 +14,6 @@ const shopifyHeaders = {
 
 const baseUrl = `https://${process.env.SHOP_DOMAIN}/admin/api/2023-04`;
 
-// Authentication middleware
-const authenticate = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    
-    if (!authHeader) {
-        return res.status(401).json({ error: 'No authorization header provided' });
-    }
-
-    const token = authHeader.split(' ')[1]; // Assuming the format is "Bearer token"
-
-    if (token !== process.env.API_ACCESS_TOKEN) {
-        return res.status(403).json({ error: 'Invalid access token' });
-    }
-
-    next(); // Token is valid, proceed to the next middleware or route handler
-};
-
-// Apply authentication middleware to all API routes
-app.use('/api', authenticate);
-
 // Base URL for all Shopify-related routes
 app.use('/api', (req, res, next) => {
     res.locals.baseUrl = baseUrl;
@@ -54,30 +34,30 @@ app.get('/api/products', async (req, res) => {
 
 // Fetch a single product
 app.get('/api/products/:productId', async (req, res) => {
-  const { productId } = req.params; 
-  try {
-      // Fetch product details
-      const productResponse = await axios.get(`${res.locals.baseUrl}/products/${productId}.json`, {
-          headers: shopifyHeaders
-      });
+    const { productId } = req.params; 
+    try {
+        // Fetch product details
+        const productResponse = await axios.get(`${res.locals.baseUrl}/products/${productId}.json`, {
+            headers: shopifyHeaders
+        });
 
-      // Fetch metafields for the product
-      const metafieldsResponse = await axios.get(`${res.locals.baseUrl}/products/${productId}/metafields.json`, {
-          headers: shopifyHeaders
-      });
+        // Fetch metafields for the product
+        const metafieldsResponse = await axios.get(`${res.locals.baseUrl}/products/${productId}/metafields.json`, {
+            headers: shopifyHeaders
+        });
 
-      // Filter out only custom metafields
-      const customMetafields = metafieldsResponse.data.metafields.filter(metafield => {
-          return metafield.namespace === 'custom'; // Replace 'custom' with your actual namespace or condition
-      });
+        // Filter out only custom metafields
+        const customMetafields = metafieldsResponse.data.metafields.filter(metafield => {
+            return metafield.namespace === 'custom'; // Replace 'custom' with your actual namespace or condition
+        });
 
-      const product = productResponse.data.product;
-      product.metafields = customMetafields; // Add only custom metafields to the product object
+        const product = productResponse.data.product;
+        product.metafields = customMetafields; // Add only custom metafields to the product object
 
-      res.status(200).json(product);
-  } catch (error) {
-      res.status(500).json({ error: error.message });
-  }
+        res.status(200).json(product);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Fetch all orders
@@ -212,21 +192,40 @@ app.delete('/api/orders/:orderId', async (req, res) => {
 
 // Fetch all metafields for a specific product
 app.get('/api/products/:productId/metafields', async (req, res) => {
-  const { productId } = req.params;
-  try {
-      const response = await axios.get(`${res.locals.baseUrl}/products/${productId}/metafields.json`, {
-          headers: shopifyHeaders
-      });
+    const { productId } = req.params;
+    try {
+        const response = await axios.get(`${res.locals.baseUrl}/products/${productId}/metafields.json`, {
+            headers: shopifyHeaders
+        });
 
-      // Filter out only custom metafields
-      const customMetafields = response.data.metafields.filter(metafield => {
-          return metafield.namespace === 'custom'; // Replace 'custom' with your actual namespace or condition
-      });
+        // Filter out only custom metafields
+        const customMetafields = response.data.metafields.filter(metafield => {
+            return metafield.namespace === 'custom'; // Replace 'custom' with your actual namespace or condition
+        });
 
-      res.status(200).json(customMetafields);
-  } catch (error) {
-      res.status(500).json({ error: error.message });
-  }
+        res.status(200).json(customMetafields);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Fetch a specific metafield for a product
+app.get('/api/products/:productId/metafields/:metafieldId', async (req, res) => {
+    const { productId, metafieldId } = req.params;
+    try {
+        const response = await axios.get(`${res.locals.baseUrl}/products/${productId}/metafields/${metafieldId}.json`, {
+            headers: shopifyHeaders
+        });
+
+        // Check if the metafield has the namespace 'custom'
+        if (response.data.metafield.namespace === 'custom') {
+            res.status(200).json(response.data.metafield);
+        } else {
+            res.status(404).json({ error: 'Metafield not found or does not have the required namespace.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Fetch all collections
@@ -302,6 +301,31 @@ app.get('/api/blogs/:blogId', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+// Delete a blog
+app.delete('/api/blogs/:blogId', async (req, res) => {
+  const { blogId } = req.params;
+  try {
+      await axios.delete(`${res.locals.baseUrl}/blogs/${blogId}.json`, {
+          headers: shopifyHeaders
+      });
+      res.status(204).send(); // No content, successful deletion
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a page
+app.delete('/api/pages/:pageId', async (req, res) => {
+  const { pageId } = req.params;
+  try {
+      await axios.delete(`${res.locals.baseUrl}/pages/${pageId}.json`, {
+          headers: shopifyHeaders
+      });
+      res.status(204).send(); // No content, successful deletion
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
 });
 
 // Start the server
